@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "multer": "^2.5.0",
+    "pdf-parse": "^2.4.5",
+    "zod": "^4.6.7",
+    "zod-to-json-schema": "^3.25.2"
+  }
+}

@@ -1,11 +1,27 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { useNavigate,Link } from 'react-router-dom'
+import { useAuth } from '../hooks/useAuth'
 
 const register = () => {
     const navigate = useNavigate()
 
-    const handleSubmit = (e) =>{
+    const { loading, handleRegister } = useAuth()
+
+    const [email, setEmail] = useState("")
+    const [username, setUsername] = useState("")
+    const [password, setPassword] = useState("")
+
+    const handleSubmit = async (e) =>{
         e.preventDefault()
+       const success = await handleRegister({ username,email,password })
+
+       if(success){
+        navigate("/");
+       }
+    }
+
+    if(loading){
+        return (<main><h1>Loading....</h1></main>)
     }
 
   return (
@@ -16,17 +32,23 @@ const register = () => {
             <form onSubmit={handleSubmit}>
                 <div className="input-group">
                     <label htmlFor='username'>Username</label>
-                    <input type="username" id="username" name='username' placeholder='Enter Username'></input>
+                    <input
+                    onChange={(e)=>{setUsername(e.target.value)}}
+                    type="username" id="username" name='username' placeholder='Enter Username'></input>
                 </div>
 
                 <div className="input-group">
                     <label htmlFor='email'>Email</label>
-                    <input type="email" id="email" name='email' placeholder='Enter Email Adrress'></input>
+                    <input 
+                    onChange={(e)=>{setEmail(e.target.value)}}
+                    type="email" id="email" name='email' placeholder='Enter Email Adrress'></input>
                 </div>
 
                 <div className="input-group">
                     <label htmlFor='password'>Password</label>
-                    <input type="password" id="password" name='password' placeholder='Enter Password'></input>
+                    <input 
+                    onChange={(e)=>{setPassword(e.target.value)}}
+                    type="password" id="password" name='password' placeholder='Enter Password'></input>
                 </div>
 
                 <button className='button primary-button'>Register</button>

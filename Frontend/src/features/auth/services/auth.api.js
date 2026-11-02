@@ -56,5 +56,6 @@ export async function getMe(){
         return response.data
     }catch(err){
         console.log(err)
+        return null;
     }
 }
