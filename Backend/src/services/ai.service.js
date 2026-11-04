@@ -7,6 +7,7 @@ const ai = new GoogleGenAI({
 const interviewReportResponseSchema = {
     type: "object",
     properties: {
+        title : { type : "string" },
         matchScore: {
             type: "number",
             minimum: 0,
@@ -72,37 +73,115 @@ const interviewReportResponseSchema = {
             }
         }
     },
-    required: ["matchScore", "technicalQuestions", "behaviouralQuestions", "skillGaps", "preparationPlan"],
+    required: ["title","matchScore", "technicalQuestions", "behaviouralQuestions", "skillGaps", "preparationPlan"],
     additionalProperties: false
 };
 
-async function generateInterviewReport({ resume, selfDescription, jobDescription }){
 
-    const prompt = `Generate a complete interview assessment in valid JSON only.
+const sleep = (ms) =>
+    new Promise(resolve => setTimeout(resolve, ms));
 
-Requirements:
-- Return a JSON object with exactly these fields: matchScore, technicalQuestions, behaviouralQuestions, skillGaps, preparationPlan.
-- Do not leave arrays empty.
-- Generate realistic interview content relevant to the candidate and job role.
-- technicalQuestions: include at least 3 or more questions appropriate to the role and candidate profile.
-- behaviouralQuestions: include at least 2 or more situational or experience-based questions.
-- skillGaps: include at least 2 or more concrete skill gaps when relevant; if the candidate appears strong in a skill, still include meaningful but smaller gaps where appropriate.
-- preparationPlan: include at least 3 or more daily plan items with a clear focus and practical tasks.
-- Each question object must include: question, intention, answer.
-- Each skill gap object must include: skill, severity.
-- Each plan item must include: day, focus, tasks.
-- Tailor the questions and gaps to the actual resume, self-description, and job description rather than using a fixed template.
+async function generateWithRetry(request, maxRetries = 3) {
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        try {
+            return await request();
+        } catch (error) {
+            const status = error.status || error.code;
 
-Candidate data:
-Resume:
-${resume}
+            // Retry only temporary server errors
+            if (
+                status !== 503 &&
+                status !== 500 &&
+                status !== 429
+            ) {
+                throw error;
+            }
 
-Self Description:
-${selfDescription}
+            if (attempt === maxRetries) {
+                throw error;
+            }
 
-Job Description:
-${jobDescription}
-`;
+            const delay = Math.min(
+                2000 * Math.pow(2, attempt),
+                10000
+            );
+
+            console.log(
+                `Gemini API failed. Retrying in ${delay / 1000}s...`
+            );
+
+            await sleep(delay);
+        }
+    }
+}
+
+
+async function generateInterviewReport({
+    resume,
+    selfDescription,
+    jobDescription
+}) {
+    const prompt = `
+    You are an expert technical interviewer, senior HR recruiter,
+    and career assessment specialist.
+
+    Analyze the candidate's resume, self-description, and job
+    description carefully.
+
+    Generate a detailed, personalized interview assessment.
+
+    REQUIREMENTS:
+
+    1. Technical Questions:
+       - Generate 15 questions.
+       - Include easy, medium, and hard questions.
+       - Cover fundamentals, technologies, projects, and
+         job-specific concepts.
+       - Each question must include question, intention, answer.
+       - Answers must contain detailed explanations and examples.
+
+    2. Behavioural Questions:
+       - Generate 8 questions.
+       - Cover teamwork, conflict resolution, problem-solving,
+         failures, leadership, and adaptability.
+       - Use STAR methodology where appropriate.
+       - Each question must include question, intention, answer.
+
+    3. Skill Gaps:
+       - Generate 6 relevant skill gaps.
+       - Identify missing skills based on the job description.
+       - Each object must include skill and severity.
+       - Severity must be High, Medium, or Low.
+
+    4. Preparation Plan:
+       - Generate a 10-day preparation plan.
+       - Each day must include day, focus, and tasks.
+       - Include 3-5 practical tasks per day.
+       - Address the identified skill gaps.
+
+    5. Match Score:
+       - Generate a realistic score between 0 and 100.
+       - Evaluate technical skills, experience, projects,
+         and job requirements.
+
+    IMPORTANT:
+    - Personalize all content using the candidate information.
+    - Never invent candidate experience or achievements.
+    - Avoid generic and repetitive questions.
+    - Provide detailed answers, not one-line responses.
+    - Do not leave arrays empty.
+    - Return valid JSON matching the provided schema.
+    - Do not include Markdown or additional text.
+
+    CANDIDATE RESUME:
+    ${resume}
+
+    SELF DESCRIPTION:
+    ${selfDescription}
+
+    JOB DESCRIPTION:
+    ${jobDescription}
+    `;
 
     const response = await ai.models.generateContent({
         model: "gemini-3.6-flash",
@@ -110,7 +189,8 @@ ${jobDescription}
         config: {
             responseMimeType: "application/json",
             responseSchema: interviewReportResponseSchema,
-            temperature: 0.7
+            temperature: 0.7,
+            maxOutputTokens: 12000
         }
     });
 
