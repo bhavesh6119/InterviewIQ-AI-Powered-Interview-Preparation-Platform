@@ -21,6 +21,26 @@ interviewRouter.post("/", authMiddleware.authUser, upload.single("resume"), inte
  */
 interviewRouter.get("/report/:interviewId",authMiddleware.authUser,interviewController.getInterviewReportByIdController)
 
+/**
+ * @route GET /api/interview/resume/:interviewId
+ * @description download a generated PDF resume for the selected interview report
+ * @access private
+ */
+interviewRouter.get("/resume/:interviewId", authMiddleware.authUser, interviewController.generateResumePdfController)
+
+// /**
+//  * @route GET /api/interview/resume/pdf/:interviewId
+//  * @description backward-compatible alias for older frontend calls
+//  * @access private
+//  */
+// interviewRouter.get("/resume/pdf/:interviewId", authMiddleware.authUser, interviewController.downloadResumeController)
+
+/**
+ * @route GET /api/interview/resume/pdf
+ * @description generate resume pdf on the basis of user self description, resume content and job description.
+ * @access private
+ */
+interviewRouter.post("/resume/pdf/:interviewReportId", authMiddleware.authUser, interviewController.generateResumePdfController)
 
 /**
  * @route GET /api/interview/
