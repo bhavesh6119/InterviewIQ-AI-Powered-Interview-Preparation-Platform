@@ -5,7 +5,7 @@ import { useAuth } from '../hooks/useAuth'
 
 const Register = () => {
   const navigate = useNavigate()
-  const { loading, handleRegister } = useAuth()
+  const { loading, error, handleRegister } = useAuth()
 
   const [email, setEmail] = useState('')
   const [username, setUsername] = useState('')
@@ -55,6 +55,8 @@ const Register = () => {
           </div>
 
           <form className="auth-form" onSubmit={handleSubmit}>
+            {error && <div className="auth-error">{error}</div>}
+
             <div className="input-group">
               <label htmlFor="username">Username</label>
               <input

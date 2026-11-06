@@ -1,66 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import '../styles/interview.scss';
+import { useInterview } from '../hooks/useInterview';
+import { useParams } from 'react-router-dom';
+import { generateResumePdf } from '../services/interview.api';
 
-const report = {
-  matchScore: 88,
-  technicalQuestions: [
-    {
-      question: 'Explain the Node.js event loop and how it handles asynchronous I/O operations.',
-      intention: 'Assess understanding of runtime execution and non-blocking behavior.',
-      answer: 'Node.js uses the event loop to process callbacks without blocking the main thread. Async I/O operations are delegated to the libuv thread pool, and completion callbacks are queued back to the event loop.'
-    },
-    {
-      question: 'How do you optimize a MongoDB aggregation pipeline for high-volume data?',
-      intention: 'Check pipeline design and performance thinking.',
-      answer: 'I would reduce document scanning by indexing fields used in match and sort stages, project only required fields, and push heavy transformations earlier to minimize output size.'
-    },
-    {
-      question: 'Can you describe the Cache-Aside pattern and when you would use Redis in a Node.js application?',
-      intention: 'Understand caching strategy and trade-offs.',
-      answer: 'Cache-Aside loads data from the database into Redis on first access, then serves future requests from cache. I would use Redis for hot data, session state, or rate limiting.'
-    },
-    {
-      question: 'What are the challenges of migrating a monolithic application to a modular service-based architecture?',
-      intention: 'Assess system design and migration planning maturity.',
-      answer: 'The biggest challenges are breaking contracts safely, data consistency, operational complexity, and keeping backward compatibility during incremental rollout.'
-    }
-  ],
-  behavioralQuestions: [
-    {
-      question: 'Tell me about a time you had to fix a production issue under pressure.',
-      intention: 'Evaluate ownership and crisis response.',
-      answer: 'I triaged the incident quickly, isolated the failing dependency, communicated status, and implemented a reversible fix while monitoring metrics.'
-    },
-    {
-      question: 'Describe a situation where you had to align stakeholders with conflicting priorities.',
-      intention: 'Measure collaboration and communication.',
-      answer: 'I gathered each stakeholder’s goals, clarified the shared objective, and proposed a phased delivery plan that balanced dependencies and risk.'
-    }
-  ],
-  skillGaps: [
-    { skill: 'Message Queues (Kafka|RabbitMQ)', severity: 'high' },
-    { skill: 'Advanced Docker & CI/CD Pipelines', severity: 'medium' },
-    { skill: 'Distributed Systems Design', severity: 'medium' },
-    { skill: 'Production-level Redis management', severity: 'low' }
-  ],
-  preparationPlan: [
-    {
-      day: 1,
-      focus: 'Core backend fundamentals',
-      tasks: ['Review async patterns and event loop behavior', 'Practice Node.js debugging scenarios']
-    },
-    {
-      day: 2,
-      focus: 'Database performance tuning',
-      tasks: ['Study indexes and aggregation pipelines', 'Run MongoDB query optimization exercises']
-    },
-    {
-      day: 3,
-      focus: 'Caching and system design',
-      tasks: ['Review Redis patterns', 'Model cache invalidation and failure cases']
-    }
-  ]
-};
 
 const NAV_ITEMS = [
   { id: 'technical', label: 'Technical Questions', icon: '›' },
@@ -116,6 +59,78 @@ const RoadMapDay = ({ day }) => (
 
 const Interview = () => {
   const [activeNav, setActiveNav] = useState('technical');
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState('');
+  const { report, getReportById, loading } = useInterview();
+  const { interviewId } = useParams()
+
+  useEffect(()=>{
+    if(interviewId){
+        getReportById(interviewId)
+    }
+  },[ interviewId ])
+
+ const handleDownloadResume = async () => {
+  if (!interviewId) return;
+
+  setIsDownloading(true);
+  setDownloadError('');
+
+  try {
+    const pdfBlob = await generateResumePdf({ interviewReportId: interviewId });
+
+    if (!(pdfBlob instanceof Blob) || pdfBlob.type.includes('json')) {
+      throw new Error('Resume generation failed. Please try again.');
+    }
+
+    const url = window.URL.createObjectURL(pdfBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${report?.title || 'candidate-resume'}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    setTimeout(() => {
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    }, 1000);
+  } catch (error) {
+    console.error('Resume download failed:', error);
+    setDownloadError(error?.message || 'Resume generation failed. Please try again.');
+  } finally {
+    setIsDownloading(false);
+  }
+};
+
+    if(loading){
+        return (
+            <main className='loading-screen'>
+                <h1>
+                    Loading...
+                </h1>
+            </main>
+        )
+    }
+
+  if (!report) {
+    return (
+      <div className='interview-page'>
+        <div className='interview-layout'>
+          <div style={{ padding: '2rem', color: '#e6edf3' }}>
+            Unable to load interview report. Please try again later.
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const technicalQuestions = Array.isArray(report.technicalQuestions) ? report.technicalQuestions : [];
+  const behaviouralQuestions = Array.isArray(report.behaviouralQuestions)
+    ? report.behaviouralQuestions
+    : Array.isArray(report.behavioralQuestions)
+      ? report.behavioralQuestions
+      : [];
+  const preparationPlan = Array.isArray(report.preparationPlan) ? report.preparationPlan : [];
+  const skillGaps = Array.isArray(report.skillGaps) ? report.skillGaps : [];
 
   const scoreColor =
     report.matchScore >= 80 ? 'score--high' :
@@ -140,10 +155,21 @@ const Interview = () => {
             ))}
           </div>
 
-          <button type='button' className='button primary-button'>
-            Download Resume
+          <button
+            type='button'
+            className={`button primary-button ${isDownloading ? 'is-loading' : ''}`}
+            onClick={handleDownloadResume}
+            disabled={isDownloading}
+          >
+            {isDownloading ? 'Preparing Resume...' : 'Download Resume'}
           </button>
         </nav>
+
+        {downloadError && (
+          <div className='interview-download-error' aria-live='polite'>
+            {downloadError}
+          </div>
+        )}
 
         <div className='interview-divider' />
 
@@ -152,10 +178,10 @@ const Interview = () => {
             <section>
               <div className='content-header'>
                 <h2>Technical Questions</h2>
-                <span className='content-header__count'>{report.technicalQuestions.length} questions</span>
+                <span className='content-header__count'>{technicalQuestions.length} questions</span>
               </div>
               <div className='q-list'>
-                {report.technicalQuestions.map((q, i) => (
+                {technicalQuestions.map((q, i) => (
                   <QuestionCard key={i} item={q} index={i} />
                 ))}
               </div>
@@ -166,10 +192,10 @@ const Interview = () => {
             <section>
               <div className='content-header'>
                 <h2>Behavioral Questions</h2>
-                <span className='content-header__count'>{report.behavioralQuestions.length} questions</span>
+                <span className='content-header__count'>{behaviouralQuestions.length} questions</span>
               </div>
               <div className='q-list'>
-                {report.behavioralQuestions.map((q, i) => (
+                {behaviouralQuestions.map((q, i) => (
                   <QuestionCard key={i} item={q} index={i} />
                 ))}
               </div>
@@ -180,10 +206,10 @@ const Interview = () => {
             <section>
               <div className='content-header'>
                 <h2>Preparation Road Map</h2>
-                <span className='content-header__count'>{report.preparationPlan.length}-day plan</span>
+                <span className='content-header__count'>{preparationPlan.length}-day plan</span>
               </div>
               <div className='roadmap-list'>
-                {report.preparationPlan.map((day) => (
+                {preparationPlan.map((day) => (
                   <RoadMapDay key={day.day} day={day} />
                 ))}
               </div>
@@ -208,7 +234,7 @@ const Interview = () => {
           <div className='skill-gaps'>
             <p className='skill-gaps__label'>Skill Gaps</p>
             <div className='skill-gaps__list'>
-              {report.skillGaps.map((gap, i) => (
+              {skillGaps.map((gap, i) => (
                 <span key={i} className={`skill-tag skill-tag--${gap.severity}`}>
                   {gap.skill}
                 </span>

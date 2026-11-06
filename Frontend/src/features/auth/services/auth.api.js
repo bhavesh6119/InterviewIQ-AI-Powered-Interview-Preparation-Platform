@@ -10,6 +10,19 @@ const api =axios.create({
     withCredentials : true
 })
 
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        const status = error?.response?.status
+
+        if (status === 401 && window.location.pathname !== '/login' && window.location.pathname !== '/register') {
+            window.location.href = '/login'
+        }
+
+        return Promise.reject(error)
+    }
+)
+
 export async function register({ username,email,password }){
 
     try{
@@ -19,8 +32,8 @@ export async function register({ username,email,password }){
 
         return response.data;
     }catch(err){
-
-        console.log(err)
+        console.error('Register error:', err)
+        throw err
     }
 
 }
@@ -34,8 +47,8 @@ export async function login({ email,password }){
 
         return response.data;
     }catch(err){
-
-        console.log(err)
+        console.error('Login error:', err)
+        throw err
     }
 
 }
@@ -45,7 +58,8 @@ export async function logout(){
         const response = await api.get('/api/auth/logout')
         return response.data;
     }catch(err){
-        console.log(err)
+        console.error('Logout error:', err)
+        throw err
     }
 }
 
@@ -55,7 +69,7 @@ export async function getMe(){
 
         return response.data
     }catch(err){
-        console.log(err)
+        console.error('GetMe error:', err)
         return null;
     }
 }

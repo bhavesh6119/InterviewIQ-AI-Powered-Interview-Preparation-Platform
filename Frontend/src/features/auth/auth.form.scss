@@ -124,6 +124,16 @@
   gap: 1rem;
 }
 
+.auth-error {
+  border: 1px solid rgba(239, 68, 68, 0.55);
+  background: rgba(127, 29, 29, 0.28);
+  color: #fecaca;
+  border-radius: 12px;
+  padding: 0.8rem 0.9rem;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
 .input-group {
   display: flex;
   flex-direction: column;

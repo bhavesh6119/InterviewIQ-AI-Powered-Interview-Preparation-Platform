@@ -4,7 +4,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 
 const Login = () => {
-  const { loading, handleLogin } = useAuth()
+  const { loading, error, handleLogin } = useAuth()
   const navigate = useNavigate()
 
   const [email, setEmail] = useState('')
@@ -54,6 +54,8 @@ const Login = () => {
           </div>
 
           <form className="auth-form" onSubmit={handleSubmit}>
+            {error && <div className="auth-error">{error}</div>}
+
             <div className="input-group">
               <label htmlFor="email">Email</label>
               <input

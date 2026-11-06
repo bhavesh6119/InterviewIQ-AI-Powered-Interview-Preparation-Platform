@@ -1,3 +1,5 @@
+@use 'sass:color';
+
 // ── Shared Variables (mirrors home.scss theme) ────────────────────────────────
 $bg-page: #0d1117;
 $bg-card: #161b22;
@@ -16,6 +18,25 @@ $severity-low: #3fb950;
 
 *::-webkit-scrollbar {
     display: none;
+}
+
+.loading-screen {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle at top, rgba(255, 61, 143, 0.12), transparent 30%),
+        linear-gradient(180deg, #090d16 0%, #0b1120 100%);
+    color: #f5f7fb;
+    padding: 2rem 1rem;
+
+    h1 {
+        font-size: clamp(1.8rem, 3vw, 3rem);
+        font-weight: 700;
+        letter-spacing: -0.05em;
+        text-align: center;
+        color: #edf2ff;
+    }
 }
 
 // ── Page Shell ────────────────────────────────────────────────────────────────
@@ -110,6 +131,17 @@ $severity-low: #3fb950;
     }
 }
 
+.interview-download-error {
+    color: #ffb4b4;
+    background: rgba(255, 77, 77, 0.08);
+    border: 1px solid rgba(255, 77, 77, 0.28);
+    border-radius: 0.6rem;
+    padding: 0.7rem 0.9rem;
+    margin: 0.75rem 0 0;
+    font-size: 0.82rem;
+    line-height: 1.5;
+}
+
 // ── Center Content ────────────────────────────────────────────────────────────
 .interview-content {
     flex: 1;
@@ -172,7 +204,7 @@ $severity-low: #3fb950;
     transition: border-color 0.2s;
 
     &:hover {
-        border-color: lighten($border-color, 8%);
+        border-color: color.adjust($border-color, $lightness: 8%);
     }
 
     &__header {
@@ -234,7 +266,7 @@ $severity-low: #3fb950;
         p {
             margin: 0;
             font-size: 0.835rem;
-            color: lighten($text-muted, 15%);
+            color: color.adjust($text-muted, $lightness: 15%);
             line-height: 1.6;
         }
     }
@@ -338,7 +370,7 @@ $severity-low: #3fb950;
             align-items: flex-start;
             gap: 0.5rem;
             font-size: 0.845rem;
-            color: lighten($text-muted, 12%);
+            color: color.adjust($text-muted, $lightness: 12%);
             line-height: 1.5;
         }
     }
