@@ -5,8 +5,8 @@ import axios from "axios";
  * @description to create a resusable code containing base address and withcredentials
  * @access private
  */
-const api =axios.create({
-    baseURL:"http://localhost:3000",
+const api = axios.create({
+    baseURL: import.meta.env.VITE_API_URL || "http://localhost:3000",
     withCredentials : true
 })
 
