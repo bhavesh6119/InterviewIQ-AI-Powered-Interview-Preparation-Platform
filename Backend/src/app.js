@@ -18,7 +18,8 @@ const allowedOrigins = [
 ];
 
 if (process.env.FRONTEND_URL) {
-    allowedOrigins.push(process.env.FRONTEND_URL.replace(/\/$/, ""));
+    const urls = process.env.FRONTEND_URL.split(",").map(u => u.trim().replace(/\/$/, ""));
+    allowedOrigins.push(...urls);
 }
 
 //middleware
@@ -28,12 +29,21 @@ app.use(cors({
     origin: function (origin, callback) {
         if (!origin) return callback(null, true);
         const normalizedOrigin = origin.replace(/\/$/, "");
-        if (allowedOrigins.includes(normalizedOrigin) || process.env.NODE_ENV !== "production") {
+        
+        // Allow listed origins, any vercel deployment, or non-production mode
+        const isAllowed = 
+            allowedOrigins.includes(normalizedOrigin) ||
+            normalizedOrigin.endsWith(".vercel.app") ||
+            process.env.NODE_ENV !== "production";
+
+        if (isAllowed) {
             return callback(null, true);
         }
-        return callback(new Error(`CORS blocked for origin: ${origin}`));
+        return callback(null, false);
     },
-    credentials: true
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "Cookie"]
 }));
 
 // Health check endpoint for hosting providers
